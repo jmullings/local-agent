@@ -1,719 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Agent | VS Code Extension</title>
-    <!-- Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
-    <!-- Three.js for 3D Particle Dynamics -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Local Agent — An AI agent that never leaves your machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --bg: #050508;
+    --bg-panel: rgba(10, 15, 30, 0.62);
+    --bg-panel-solid: #0a0e1a;
+    --text-main: #f0f4f8;
+    --text-muted: #8b9bb4;
+    --text-faint: #5a6478;
+    --cyan: #00f0ff;
+    --blue: #0055ff;
+    --mint: #00ff88;
+    --amber: #ffb347;
+    --border: rgba(0, 240, 255, 0.16);
+    --border-soft: rgba(139, 155, 180, 0.16);
+  }
 
-    <style>
-        :root {
-            --bg-color: #050508;
-            --text-main: #f0f4f8;
-            --text-muted: #8b9bb4;
-            --accent-blue: #00f0ff;
-            --accent-dark: #0055ff;
-            --glass-bg: rgba(10, 15, 30, 0.6);
-            --glass-border: rgba(0, 240, 255, 0.2);
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
+  #canvas-container {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  #canvas-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 40%;
+    background: linear-gradient(to top, var(--bg), transparent);
+  }
 
-        /* 3D Canvas Background */
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            overflow: hidden;
-        }
+  .wrapper { position: relative; z-index: 10; }
 
-        #canvas-container::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 30%;
-            background: linear-gradient(to top, var(--bg-color), transparent);
-            z-index: 1;
-        }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Layout */
-        .wrapper {
-            position: relative;
-            z-index: 10;
-        }
+  /* ── Nav ── */
+  nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 5%;
+    background: linear-gradient(to bottom, rgba(5,5,8,0.9), transparent);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
+  .logo-mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; box-shadow: 0 0 20px rgba(0,240,255,0.35);
+  }
+  .nav-links { display: flex; align-items: center; gap: 14px; }
+  .nav-btn {
+    background: rgba(0,240,255,0.08); border: 1px solid var(--cyan); color: var(--cyan);
+    padding: 9px 18px; border-radius: 6px; text-decoration: none; font-weight: 600;
+    font-size: 0.92rem; transition: all 0.25s ease;
+  }
+  .nav-btn:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 20px rgba(0,240,255,0.4); }
+  .nav-btn.ghost { background: transparent; border-color: var(--border-soft); color: var(--text-muted); }
+  .nav-btn.ghost:hover { background: rgba(255,255,255,0.06); color: var(--text-main); box-shadow: none; }
 
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 5%;
-            background: linear-gradient(to bottom, rgba(5, 5, 8, 0.9), transparent);
-        }
+  /* ── Hero ── */
+  .hero {
+    min-height: 92vh; display: flex; align-items: center; gap: 4%;
+    padding: 2rem 5% 4rem;
+  }
+  .hero-content { max-width: 600px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; background: rgba(0,85,255,0.16); border: 1px solid var(--blue);
+    border-radius: 20px; font-size: 0.8rem; font-weight: 600; color: var(--cyan);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem;
+  }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 8px var(--mint); }
+  h1 {
+    font-size: 3.6rem; line-height: 1.08; font-weight: 800; margin-bottom: 1.4rem;
+    background: linear-gradient(135deg, #fff 0%, #8b9bb4 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  h1 span {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { font-size: 1.15rem; color: var(--text-muted); max-width: 92%; margin-bottom: 2.2rem; }
+  .cta-group { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn-primary, .btn-secondary {
+    padding: 15px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;
+    font-size: 1.02rem; display: inline-flex; align-items: center; gap: 9px; transition: all 0.25s;
+  }
+  .btn-primary {
+    background: var(--blue); color: #fff; border: 1px solid var(--cyan);
+    box-shadow: 0 0 28px rgba(0,85,255,0.4);
+  }
+  .btn-primary:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 36px rgba(0,240,255,0.55); }
+  .btn-secondary { background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--border); backdrop-filter: blur(10px); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.07); }
 
-        .logo {
-            font-weight: 800;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: -0.5px;
-        }
-        .logo img {
-            /* background: transparent; */
-            border-radius: 5%;
-            /* filter: brightness(0) invert(1); */
-        }
-        .nav-btn {
-            background: rgba(0, 240, 255, 0.1);
-            border: 1px solid var(--accent-blue);
-            color: var(--accent-blue);
-            padding: 10px 20px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+  /* ── Agent panel (honest live-feel demo) ── */
+  .agent-panel {
+    width: 380px; flex-shrink: 0;
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px;
+    backdrop-filter: blur(14px); overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border-soft);
+  }
+  .panel-head-left { display: flex; align-items: center; gap: 9px; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; }
+  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 8px var(--mint); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .panel-head-right { font-size: 0.75rem; color: var(--text-faint); }
 
-        .nav-btn:hover {
-            background: var(--accent-blue);
-            color: var(--bg-color);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-        }
+  .panel-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 18px; font-size: 0.85rem; border-bottom: 1px solid var(--border-soft); }
+  .panel-row .label { color: var(--text-muted); }
+  .panel-row .value { font-family: 'JetBrains Mono', monospace; color: var(--text-main); }
 
-        /* Hero Section */
-        .hero {
-            min-height: 90vh;
-            display: flex;
-            align-items: center;
-            padding: 0 5%;
-            position: relative;
-        }
+  .panel-chat { padding: 16px 18px; min-height: 190px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+  .chat-line { margin-bottom: 8px; white-space: pre-wrap; }
+  .chat-line.user { color: var(--text-main); }
+  .chat-line.user::before { content: '› '; color: var(--cyan); }
+  .chat-line.agent { color: var(--text-muted); }
+  .chat-line.ok { color: var(--mint); }
+  .typing-cursor { display: inline-block; width: 6px; height: 13px; background: var(--cyan); vertical-align: middle; animation: blink 1s steps(1) infinite; margin-left: 2px; }
+  @keyframes blink { 50% { opacity: 0; } }
 
-        .hero-content {
-            max-width: 650px;
-            pointer-events: none;
-            /* Let clicks pass to 3D canvas */
-        }
+  .panel-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 18px 18px; border-top: 1px solid var(--border-soft); }
+  .chip { font-size: 0.7rem; padding: 5px 10px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); color: var(--text-muted); }
 
-        .hero-content>* {
-            pointer-events: auto;
-        }
+  /* ── Status badges (the signature device) ── */
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; }
+  .tag-shipped { background: rgba(0,255,136,0.12); color: var(--mint); border: 1px solid rgba(0,255,136,0.4); }
+  .tag-shipped::before { content: '●'; }
+  .tag-nda { background: rgba(255,179,71,0.1); color: var(--amber); border: 1px solid rgba(255,179,71,0.4); }
+  .tag-nda::before { content: '◐'; }
+  .tag-exploratory { background: transparent; color: var(--text-faint); border: 1px dashed var(--text-faint); }
+  .tag-exploratory::before { content: '○'; }
 
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            background: rgba(0, 85, 255, 0.2);
-            border: 1px solid var(--accent-dark);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--accent-blue);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; margin: -1.5rem 0 3rem; font-size: 0.82rem; color: var(--text-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
 
-        h1 {
-            font-size: 4rem;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, #8b9bb4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+  /* ── Sections ── */
+  section { padding: 100px 5%; position: relative; z-index: 10; }
+  .section-header { text-align: center; max-width: 640px; margin: 0 auto 3.5rem; }
+  .eyebrow { display: block; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--cyan); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 1rem; }
+  .section-header h2 { font-size: 2.3rem; font-weight: 800; margin-bottom: 1rem; }
+  .section-header p { color: var(--text-muted); font-size: 1.05rem; }
 
-        h1 span {
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+  /* ── Feature grid ── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px; }
+  .card {
+    background: var(--bg-panel); border: 1px solid var(--border-soft); border-radius: 16px;
+    padding: 32px 26px; transition: transform 0.3s, border-color 0.3s; position: relative;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--border); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .card-icon { font-size: 1.9rem; }
+  .card h3 { font-size: 1.25rem; margin-bottom: 10px; color: #fff; }
+  .card p { color: var(--text-muted); font-size: 0.94rem; }
 
-        .hero p {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            margin-bottom: 2.5rem;
-            max-width: 90%;
-        }
+  .install-box {
+    background: #000; border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px 22px; display: flex; justify-content: space-between; align-items: center;
+    max-width: 620px; margin: 50px auto 0; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .install-box code { color: var(--cyan); }
+  .install-box .copy-icon { cursor: pointer; color: var(--text-muted); }
+  .install-box .copy-icon:hover { color: #fff; }
+  .install-note { text-align: center; color: var(--text-faint); font-size: 0.85rem; margin-top: 14px; }
 
-        .cta-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
+  /* ── Roadmap ── */
+  .roadmap { background: linear-gradient(180deg, transparent, rgba(0,85,255,0.04), transparent); border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
+  .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; max-width: 1000px; margin: 0 auto; }
+  .roadmap-card { background: var(--bg-panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 26px; }
+  .roadmap-card .tag { margin-bottom: 14px; }
+  .roadmap-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .roadmap-card p { color: var(--text-muted); font-size: 0.9rem; }
+  .roadmap-cta { text-align: center; margin-top: 3rem; color: var(--text-muted); font-size: 0.95rem; }
+  .roadmap-cta a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+  .roadmap-cta a:hover { text-decoration: underline; }
 
-        .btn-primary {
-            background: var(--accent-dark);
-            color: #fff;
-            padding: 16px 32px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            border: 1px solid var(--accent-blue);
-            box-shadow: 0 0 30px rgba(0, 85, 255, 0.4);
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+  /* ── Vision ── */
+  .vision { display: flex; align-items: center; gap: 5%; flex-wrap: wrap; }
+  .vision-content { flex: 1; min-width: 320px; }
+  .vision-content h2 { font-size: 2.1rem; font-weight: 800; margin-bottom: 1.1rem; }
+  .vision-content p { color: var(--text-muted); font-size: 1.02rem; max-width: 540px; }
+  .vision-diagram { flex: 1; min-width: 300px; display: flex; justify-content: center; }
 
-        .btn-primary:hover {
-            background: var(--accent-blue);
-            color: var(--bg-color);
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.6);
-        }
+  /* ── Footer ── */
+  footer { padding: 60px 5% 50px; text-align: center; border-top: 1px solid var(--border-soft); }
+  footer .tagline { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+  footer .tagline span { color: var(--cyan); }
+  footer .fine-print { color: var(--text-faint); font-size: 0.82rem; }
 
-        .btn-secondary {
-            background: var(--glass-bg);
-            color: var(--text-main);
-            padding: 16px 32px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Compression Status Box Overlay */
-        .compression-status {
-            position: absolute;
-            right: 5%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 20px;
-            border-radius: 12px;
-            backdrop-filter: blur(12px);
-            width: 320px;
-            pointer-events: none;
-        }
-
-        .status-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--accent-blue);
-            text-transform: uppercase;
-            margin-bottom: 15px;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 10px;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-        }
-
-        .val-large {
-            color: #ff3366;
-            transition: color 0.5s;
-        }
-
-        .val-small {
-            color: #00f0ff;
-            font-weight: bold;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 100px 5%;
-            background: var(--bg-color);
-            position: relative;
-            z-index: 10;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-header h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 40px 30px;
-            transition: transform 0.3s, border-color 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-blue);
-        }
-
-        .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #fff;
-        }
-
-        .card p {
-            color: var(--text-muted);
-        }
-
-        /* Command Line Install */
-        .install-box {
-            background: #000;
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 600px;
-            margin: 40px auto 0;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .install-box code {
-            color: var(--accent-blue);
-        }
-
-        .copy-icon {
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-        .copy-icon:hover { color: #fff; }
-
-        /* Media Gallery */
-        .media-gallery {
-            padding: 100px 5%;
-            background: var(--bg-color);
-            position: relative;
-            z-index: 10;
-        }
-
-        .gallery-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .gallery-header h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 40px;
-        }
-
-        .gallery-item {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: transform 0.3s, border-color 0.3s;
-        }
-
-        .gallery-item:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-blue);
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 600px;
-            object-fit: cover;
-        }
-
-        .gallery-caption {
-            padding: 20px;
-            text-align: center;
-            color: var(--text-main);
-        }
-
-        @media (max-width: 900px) {
-            h1 {
-                font-size: 3rem;
-            }
-
-            .compression-status {
-                position: relative;
-                right: auto;
-                top: auto;
-                transform: none;
-                margin-top: 40px;
-                width: 100%;
-            }
-
-            .hero-content {
-                max-width: 100%;
-            }
-
-            .cta-group {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .btn-primary,
-            .btn-secondary {
-                width: 100%;
-                text-align: center;
-                justify-content: center;
-            }
-        }
-    </style>
+  @media (max-width: 900px) {
+    h1 { font-size: 2.6rem; }
+    .hero { flex-direction: column; align-items: stretch; padding-top: 2.5rem; }
+    .hero-content { max-width: 100%; }
+    .agent-panel { width: 100%; }
+    .cta-group { flex-direction: column; align-items: stretch; }
+    .btn-primary, .btn-secondary { justify-content: center; }
+    .vision { flex-direction: column; }
+  }
+</style>
 </head>
-
 <body>
 
-    <!-- 3D Particle Dynamics Canvas -->
-    <div id="canvas-container"></div>
+<div id="canvas-container"></div>
 
-    <div class="wrapper">
-        <!-- Navigation -->
-        <nav>
-            <div class="logo">
-                <img src="./media/icon_LOGO.svg" width="60px" />
-                Local Agent
-            </div>
-            <a href="#" class="nav-btn">VS Code Marketplace ↗</a>
-        </nav>
+<div class="wrapper">
+  <nav>
+    <div class="logo"><span class="logo-mark">◈</span>Local Agent</div>
+    <div class="nav-links">
+      <a href="#roadmap" class="nav-btn ghost">Roadmap</a>
+      <a href="#" class="nav-btn">VS Code Marketplace ↗</a>
+    </div>
+  </nav>
 
-        <!-- Hero Section -->
-        <section class="hero">
-            <div class="hero-content">
-                <div class="badge">Internet 2.0 Ready</div>
-                <h1>Deploy LLMs <span>Spectrally.</span></h1>
-                <p>The first VS Code extension that mirrors your project, attaches an autonomous MCP agent, and
-                    compresses full LLM bundles into 1-2MB for secure, local, browser-based serving.</p>
-
-                <div class="cta-group">
-                    <a href="#" class="btn-primary">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Install for VS Code
-                    </a>
-                    <a href="#features" class="btn-secondary">Explore Architecture</a>
-                </div>
-            </div>
-
-            <!-- Dynamic UI showing compression stat -->
-            <div class="compression-status">
-                <div class="status-title">Tensor Transform Pipeline</div>
-                <div class="stat-row">
-                    <span>Input: Qwen-7B (fp16)</span>
-                    <span id="stat-input" class="val-large">4.7 GB</span>
-                </div>
-                <div class="stat-row">
-                    <span>Spectral Matrix</span>
-                    <span id="stat-status">Compressing...</span>
-                </div>
-                <div class="stat-row">
-                    <span>Browser Bundle</span>
-                    <span id="stat-output" class="val-small">-- MB</span>
-                </div>
-                <div style="margin-top: 15px; height: 4px; background: #222; border-radius: 2px; overflow: hidden;">
-                    <div id="progress-bar"
-                        style="height: 100%; width: 0%; background: var(--accent-blue); box-shadow: 0 0 10px var(--accent-blue); transition: width 0.1s;">
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Features Grid -->
-        <section id="features" class="features">
-            <div class="section-header">
-                <h2>End-to-End Control. <span style="color: var(--accent-blue);">Zero Leaks.</span></h2>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Build, Run, Bundle, and Serve everything
-                    directly from your IDE.</p>
-            </div>
-
-            <div class="grid">
-                <!-- Feature 1 -->
-                <div class="card">
-                    <div class="card-icon">⚡️</div>
-                    <h3>Spectral Compression</h3>
-                    <p>Proprietary tensor-level compression drops gigabyte LLMs down to a 1-2MB `.lgz` bundle. Serve
-                        full AI intelligence directly to standard web browsers over Internet 2.0 protocols.</p>
-                </div>
-                <!-- Feature 2 -->
-                <div class="card">
-                    <div class="card-icon">🐳</div>
-                    <h3>Docker-Native Agent</h3>
-                    <p>No more brittle shell scripts. One click generates a Dockerfile, builds your environment, and
-                        attaches a local Ollama agent inside a secure, PIN-protected container.</p>
-                </div>
-                <!-- Feature 3 -->
-                <div class="card">
-                    <div class="card-icon">🛡️</div>
-                    <h3>Safeguard Audit</h3>
-                    <p>Security isn't an afterthought. Local Agent runs an automated, container-scoped OWASP ZAP
-                        vulnerability scan on every deployment to ensure ethical hacking safety.</p>
-                </div>
-                <!-- Feature 4 -->
-                <div class="card">
-                    <div class="card-icon">🔌</div>
-                    <h3>Model Context Protocol</h3>
-                    <p>Give your local models superpowers. Explicitly enable MCP tools per-session to let the agent read
-                        files, manage databases, and search securely without leaving your machine.</p>
-                </div>
-            </div>
-
-            <div class="install-box">
-                <code>ext install undefined_publisher.local-agent</code>
-                <div class="copy-icon" onclick="alert('Copied to clipboard!')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </div>
-            </div>
-        </section>
-        <section class="media-gallery">
-            <div class="gallery-header">
-                <h2>Media Gallery</h2>
-            </div>
-            <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="./media/LA_INTERNET2.png" alt="Internet 2.0">
-                    <!-- <div class="gallery-caption">Internet 2.0</div> -->
-                </div>
-                <div class="gallery-item">
-                    <img src="./media/LA_build.png" alt="Build">
-                    <!-- <div class="gallery-caption">Build</div> -->
-                </div>
-                <div class="gallery-item">
-                    <img src="./media/LA_deploy.png" alt="Deploy">
-                    <!-- <div class="gallery-caption">Promote</div> -->
-                </div>
-            </div>
-        </section>
+  <section class="hero">
+    <div class="hero-content">
+      <div class="badge"><span class="dot"></span>Local-First Agent Infrastructure</div>
+      <h1>An agent that never <span>leaves your machine.</span></h1>
+      <p>Local Agent mirrors your project into Docker, attaches a tool-calling LLM over MCP, and lets it write, run, and verify its own work, scanned and audited the whole way, without your code touching the cloud.</p>
+      <div class="cta-group">
+        <a href="#features" class="btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Install for VS Code
+        </a>
+        <a href="#" class="btn-secondary">View on GitHub</a>
+      </div>
     </div>
 
-    <!-- 3D Animation Script using Three.js -->
-    <script>
-        // ─── THREE.JS SETUP ───
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050508, 0.002);
+    <div class="agent-panel">
+      <div class="panel-head">
+        <div class="panel-head-left"><span class="pulse-dot"></span>Local Agent</div>
+        <div class="panel-head-right mono">localhost:11434</div>
+      </div>
+      <div class="panel-row"><span class="label">Docker</span><span class="value">● Connected</span></div>
+      <div class="panel-row"><span class="label">Model</span><span class="value">Llama 3.1 70B Instruct</span></div>
+      <div class="panel-chat" id="panel-chat"></div>
+      <div class="panel-chips">
+        <span class="chip">Safeguard: scoped to this container</span>
+        <span class="chip">MCP tools: 3 enabled</span>
+        <span class="chip">Audit log: recording</span>
+      </div>
+    </div>
+  </section>
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 150;
-        camera.position.x = 80; // Offset to the right to frame next to text
+  <section id="features" class="features">
+    <div class="section-header">
+      <span class="eyebrow">What's live today</span>
+      <h2>End-to-end control. Fully local.</h2>
+      <p>Everything below runs inside the extension right now — no waitlist, no beta flag.</p>
+    </div>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+    <div class="grid">
+      <div class="card">
+        <div class="card-top"><div class="card-icon">🐳</div><span class="tag tag-shipped">Shipped</span></div>
+        <h3>Mirror &amp; manage</h3>
+        <p>Point Local Agent at a folder and it generates a Dockerfile, builds the image, and runs your project in a container with the agent attached. Already have infrastructure running? Attach the agent to it directly over MCP instead.</p>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-icon">🔌</div><span class="tag tag-shipped">Shipped</span></div>
+        <h3>MCP tool access</h3>
+        <p>Every tool the agent can call is toggled on by you, per session, from the sidebar. Nothing is granted by default, and nothing you haven't enabled is reachable.</p>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-icon">⚙️</div><span class="tag tag-shipped">Shipped</span></div>
+        <h3>Autonomous loop</h3>
+        <p>Hand it an objective — write tests for this file and run them until they pass — and watch it read, write, run, and iterate end-to-end inside the same chat thread.</p>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-icon">🛡️</div><span class="tag tag-shipped">Shipped</span></div>
+        <h3>Safeguard</h3>
+        <p>A baseline OWASP ZAP scan that can only ever target the container Local Agent just built for you. There's no field to point it anywhere else.</p>
+      </div>
+      <div class="card">
+        <div class="card-top"><div class="card-icon">🔒</div><span class="tag tag-shipped">Shipped</span></div>
+        <h3>Encrypted mirroring</h3>
+        <p>Mirrored projects can sit behind a 6-digit PIN, set before the container is even built, that encrypts access to the local copy.</p>
+      </div>
+    </div>
 
-        // ─── PARTICLE SYSTEM DYNAMICS ───
-        // We will create particles that morph between a giant, chaotic sphere (Uncompressed LLM)
-        // and a tiny, dense, structured core (Spectrally Compressed 1-2MB Bundle).
+    <div class="install-box">
+      <code>code --install-extension local-agent-0.0.1.vsix</code>
+      <div class="copy-icon" title="Copy">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </div>
+    </div>
+    <p class="install-note">Or search “Local Agent” on the VS Code Marketplace. Requires Docker Desktop and a reachable Ollama instance.</p>
+  </section>
 
-        const particleCount = 25000;
-        const geometry = new THREE.BufferGeometry();
+  <section id="roadmap" class="roadmap">
+    <div class="section-header">
+      <span class="eyebrow">What's next</span>
+      <h2>Built so far. Building next.</h2>
+      <p>Real workstreams, labeled honestly rather than folded into the feature list above.</p>
+    </div>
 
-        const positions = new Float32Array(particleCount * 3);
-        const originalPositions = new Float32Array(particleCount * 3); // Large Sphere
-        const targetPositions = new Float32Array(particleCount * 3);   // Compressed Core
-        const colors = new Float32Array(particleCount * 3);
+    <div class="legend">
+      <span><span class="tag tag-shipped">Shipped</span> live in the extension</span>
+      <span><span class="tag tag-nda">NDA-Track</span> active development, details on request</span>
+      <span><span class="tag tag-exploratory">Exploratory</span> directional, not yet built</span>
+    </div>
 
-        const color1 = new THREE.Color('#0055ff'); // Deep blue
-        const color2 = new THREE.Color('#00f0ff'); // Neon cyan
+    <div class="roadmap-grid">
+      <div class="roadmap-card">
+        <span class="tag tag-nda">NDA-Track</span>
+        <h3>Spectral compression</h3>
+        <p>Tensor-level compression research aimed at shrinking locally served models. Specifics available to partners under NDA.</p>
+      </div>
+      <div class="roadmap-card">
+        <span class="tag tag-nda">NDA-Track</span>
+        <h3>Extended deployment</h3>
+        <p>Multi-cloud targets and CI/CD pipelines. Single-machine local deploy already ships today; this extends it outward.</p>
+      </div>
+      <div class="roadmap-card">
+        <span class="tag tag-exploratory">Exploratory</span>
+        <h3>Browser integration</h3>
+        <p>Directional, not yet built. We're shaping this with early design partners rather than shipping it blind.</p>
+      </div>
+    </div>
 
-        for (let i = 0; i < particleCount; i++) {
-            const i3 = i * 3;
+    <div class="roadmap-cta">Interested in a technical briefing or shaping the roadmap? <a href="#">Get in touch →</a></div>
+  </section>
 
-            // 1. Uncompressed State (Massive chaotic sphere)
-            const r1 = 120 * Math.cbrt(Math.random());
-            const theta1 = Math.random() * 2 * Math.PI;
-            const phi1 = Math.acos(2 * Math.random() - 1);
+  <section class="vision">
+    <div class="vision-content">
+      <span class="eyebrow">The long game — not yet built</span>
+      <h2>From static sites to agent-served ones.</h2>
+      <p>Our longer thesis: once a business's logic already runs behind an LLM your infrastructure can deploy and monitor, the natural next step is a presentation layer that same model generates and personalizes per visitor, in place of a fixed HTML bundle. That's a roadmap thesis today, built on the local model-serving and deployment infrastructure already shipping above, not a shipped product.</p>
+    </div>
+    <div class="vision-diagram">
+      <svg width="320" height="220" viewBox="0 0 320 220" fill="none">
+        <rect x="10" y="40" width="110" height="140" rx="10" stroke="#5a6478" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <rect x="22" y="56" width="86" height="8" rx="2" fill="#5a6478"/>
+        <rect x="22" y="72" width="60" height="6" rx="2" fill="#3a4258"/>
+        <rect x="22" y="86" width="86" height="40" rx="4" fill="#1a2030"/>
+        <rect x="22" y="134" width="86" height="6" rx="2" fill="#3a4258"/>
+        <rect x="22" y="148" width="60" height="6" rx="2" fill="#3a4258"/>
+        <text x="65" y="200" fill="#5a6478" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">static, fixed</text>
 
-            originalPositions[i3] = r1 * Math.sin(phi1) * Math.cos(theta1);
-            originalPositions[i3 + 1] = r1 * Math.sin(phi1) * Math.sin(theta1);
-            originalPositions[i3 + 2] = r1 * Math.cos(phi1);
+        <path d="M130 110 L185 110" stroke="#00f0ff" stroke-width="2" marker-end="url(#arrow)"/>
+        <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#00f0ff"/></marker></defs>
 
-            // 2. Compressed State (Dense, structured geometric core - a torus knot or dense sphere)
-            // We'll use a dense inner sphere for the "spectral bundle"
-            const r2 = 15 * Math.cbrt(Math.random());
-            const theta2 = Math.random() * 2 * Math.PI;
-            const phi2 = Math.acos(2 * Math.random() - 1);
+        <rect x="195" y="34" width="115" height="152" rx="10" stroke="#00f0ff" stroke-width="1.5"/>
+        <circle cx="252" cy="60" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5"/>
+        <path d="M246 60 a6 6 0 1 1 12 0 a6 6 0 1 1 -12 0" stroke="#00f0ff" stroke-width="1.2" fill="none"/>
+        <rect x="207" y="86" width="91" height="6" rx="2" fill="#00f0ff" opacity="0.7"/>
+        <rect x="207" y="100" width="65" height="6" rx="2" fill="#0055ff" opacity="0.6"/>
+        <rect x="207" y="116" width="91" height="36" rx="4" fill="#0a1a2a"/>
+        <rect x="207" y="160" width="50" height="6" rx="2" fill="#0055ff" opacity="0.6"/>
+        <text x="252" y="206" fill="#00f0ff" font-family="JetBrains Mono, monospace" font-size="10" text-anchor="middle">generated, per-visitor</text>
+      </svg>
+    </div>
+  </section>
 
-            targetPositions[i3] = r2 * Math.sin(phi2) * Math.cos(theta2);
-            targetPositions[i3 + 1] = r2 * Math.sin(phi2) * Math.sin(theta2);
-            targetPositions[i3 + 2] = r2 * Math.cos(phi2);
+  <footer>
+    <div class="tagline">Local Agent — <span>your IDE, your agent, your machine.</span></div>
+    <div class="fine-print">MIT licensed · Requires Docker &amp; Ollama · Built for VS Code</div>
+  </footer>
+</div>
 
-            // Initialize current positions
-            positions[i3] = originalPositions[i3];
-            positions[i3 + 1] = originalPositions[i3 + 1];
-            positions[i3 + 2] = originalPositions[i3 + 2];
+<script>
+  // ─── Ambient particle field (decorative — not a literal data readout) ───
+  const container = document.getElementById('canvas-container');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x050508, 0.0022);
 
-            // Mix colors
-            const mixedColor = color1.clone().lerp(color2, Math.random());
-            colors[i3] = mixedColor.r;
-            colors[i3 + 1] = mixedColor.g;
-            colors[i3 + 2] = mixedColor.b;
-        }
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 150;
+  camera.position.x = window.innerWidth < 900 ? 0 : 75;
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
 
-        // Create Particle Material
-        const material = new THREE.PointsMaterial({
-            size: 1.5,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 0.8,
-            depthWrite: false
-        });
+  const count = 9000;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const basePositions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const c1 = new THREE.Color('#0055ff');
+  const c2 = new THREE.Color('#00f0ff');
 
-        const particleSystem = new THREE.Points(geometry, material);
-        scene.add(particleSystem);
+  for (let i = 0; i < count; i++) {
+    const i3 = i * 3;
+    const r = 130 * Math.cbrt(Math.random());
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    basePositions[i3]     = r * Math.sin(phi) * Math.cos(theta);
+    basePositions[i3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    basePositions[i3 + 2] = r * Math.cos(phi);
+    positions[i3] = basePositions[i3];
+    positions[i3 + 1] = basePositions[i3 + 1];
+    positions[i3 + 2] = basePositions[i3 + 2];
+    const mixed = c1.clone().lerp(c2, Math.random());
+    colors[i3] = mixed.r; colors[i3 + 1] = mixed.g; colors[i3 + 2] = mixed.b;
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // ─── MOUSE INTERACTION ───
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
+  const material = new THREE.PointsMaterial({ size: 1.3, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.65, depthWrite: false });
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
 
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX - window.innerWidth / 2);
-            mouseY = (event.clientY - window.innerHeight / 2);
-        });
+  let mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX - window.innerWidth / 2;
+    mouseY = e.clientY - window.innerHeight / 2;
+  });
 
-        // ─── UI SYNC LOGIC ───
-        const statStatus = document.getElementById('stat-status');
-        const statOutput = document.getElementById('stat-output');
-        const statInput = document.getElementById('stat-input');
-        const progressBar = document.getElementById('progress-bar');
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    const pos = points.geometry.attributes.position.array;
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const speed = (i % 2 === 0 ? 1 : -1) * 0.06;
+      const ox = basePositions[i3], oz = basePositions[i3 + 2];
+      pos[i3]     = ox * Math.cos(t * speed) - oz * Math.sin(t * speed);
+      pos[i3 + 1] = basePositions[i3 + 1] + Math.sin(t * 0.3 + i) * 0.6;
+      pos[i3 + 2] = ox * Math.sin(t * speed) + oz * Math.cos(t * speed);
+    }
+    points.geometry.attributes.position.needsUpdate = true;
+    points.rotation.y += 0.0009;
 
-        // ─── ANIMATION LOOP ───
-        const clock = new THREE.Clock();
+    const baseX = window.innerWidth < 900 ? 0 : 75;
+    camera.position.x += (baseX + mouseX * 0.04 - camera.position.x) * 0.02;
+    camera.position.y += (-mouseY * 0.04 - camera.position.y) * 0.02;
+    camera.lookAt(scene.position);
+    renderer.render(scene, camera);
+  }
+  animate();
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
-            // Calculate interpolation factor using a sine wave (0 to 1 loop)
-            // 0 = Uncompressed, 1 = Spectrally Compressed
-            const rawSin = Math.sin(time * 0.5);
-            // Map sine (-1 to 1) to (0 to 1) with ease in/out
-            const lerpFactor = (rawSin + 1) / 2;
-            const easeFactor = lerpFactor < 0.5 ? 2 * lerpFactor * lerpFactor : 1 - Math.pow(-2 * lerpFactor + 2, 2) / 2;
+  // ─── Typewriter for the agent panel — a real, shipped workflow ───
+  const script = [
+    { role: 'user', text: 'Write tests for DockerManager.ts and run them until they pass.' },
+    { role: 'agent', text: 'Reading src/DockerManager.ts…' },
+    { role: 'agent', text: 'Writing unit tests…' },
+    { role: 'agent', text: 'Running suite… 2 failed' },
+    { role: 'agent', text: 'Fixing…' },
+    { role: 'ok',    text: 'Running suite… 9/9 passing ✓' },
+  ];
+  const chatEl = document.getElementById('panel-chat');
+  let li = 0, ci = 0;
 
-            // Update UI based on compression phase
-            if (easeFactor < 0.1) {
-                statStatus.innerText = "Extracting Tensors...";
-                statStatus.style.color = "#8b9bb4";
-                statInput.style.color = "#ff3366";
-                statOutput.innerText = "-- MB";
-            } else if (easeFactor < 0.9) {
-                statStatus.innerText = "Spectral Transform Running";
-                statStatus.style.color = "#00f0ff";
-                statInput.style.color = "#8b9bb4";
-            } else {
-                statStatus.innerText = "Bundle Ready for Browser";
-                statStatus.style.color = "#00ff88";
-                statOutput.innerText = "1.8 MB";
-            }
-            progressBar.style.width = `${easeFactor * 100}%`;
-
-            // Morph particles
-            const positions = particleSystem.geometry.attributes.position.array;
-
-            for (let i = 0; i < particleCount; i++) {
-                const i3 = i * 3;
-
-                // Add some chaotic orbit motion based on time
-                const orbitSpeed = i % 2 === 0 ? time * 0.5 : -time * 0.5;
-                const ox = originalPositions[i3];
-                const oz = originalPositions[i3 + 2];
-
-                // Rotated original positions (gives the big cloud a swirling effect)
-                const rotX = ox * Math.cos(orbitSpeed) - oz * Math.sin(orbitSpeed);
-                const rotZ = ox * Math.sin(orbitSpeed) + oz * Math.cos(orbitSpeed);
-
-                // Lerp between swirling massive cloud and tight target core
-                positions[i3] = rotX + (targetPositions[i3] - rotX) * easeFactor;
-                positions[i3 + 1] = originalPositions[i3 + 1] + (targetPositions[i3 + 1] - originalPositions[i3 + 1]) * easeFactor;
-                positions[i3 + 2] = rotZ + (targetPositions[i3 + 2] - rotZ) * easeFactor;
-            }
-
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-
-            // Camera interaction
-            targetX = mouseX * 0.05;
-            targetY = mouseY * 0.05;
-
-            particleSystem.rotation.y += 0.002;
-            particleSystem.rotation.x += 0.001;
-
-            camera.position.x += (80 + targetX - camera.position.x) * 0.02;
-            camera.position.y += (-targetY - camera.position.y) * 0.02;
-            camera.lookAt(scene.position);
-
-            renderer.render(scene, camera);
-        }
-
-        // Handle Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            // Adjust camera position for mobile
-            if (window.innerWidth < 900) {
-                camera.position.x = 0;
-            } else {
-                camera.position.x = 80;
-            }
-        });
-
-        animate();
-    </script>
+  function typeLoop() {
+    if (li >= script.length) {
+      setTimeout(() => { chatEl.innerHTML = ''; li = 0; ci = 0; typeLoop(); }, 2200);
+      return;
+    }
+    const line = script[li];
+    if (ci === 0) {
+      const div = document.createElement('div');
+      div.className = 'chat-line ' + line.role;
+      div.id = 'live-line';
+      chatEl.appendChild(div);
+    }
+    const div = document.getElementById('live-line');
+    ci++;
+    div.textContent = line.text.slice(0, ci);
+    if (ci < line.text.length) {
+      setTimeout(typeLoop, 14 + Math.random() * 18);
+    } else {
+      div.removeAttribute('id');
+      li++; ci = 0;
+      setTimeout(typeLoop, line.role === 'user' ? 500 : 400);
+    }
+  }
+  typeLoop();
+</script>
 </body>
-
 </html>

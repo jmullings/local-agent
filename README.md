@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="RM_HEADER.png" alt="Local Agent Header" width="900" />
-<p align="center">
   <div style="border-radius: 15px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease-in-out; display: inline-block;">
-    <img src="RM_HEADER.png" alt="Local Agent Header" width="900" style="display: block; border-radius: 15px;" />
+    <img src="./media/RM_HEADER.png" alt="Local Agent Header" width="900" style="display: block; border-radius: 15px;" />
   </div>
 </p>
 </p>
@@ -15,7 +13,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"/></a>
   <a href="package.json"><img src="https://img.shields.io/badge/node-%E2%89%A520%20LTS-339933.svg" alt="Node"/></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=YOUR_PUBLISHER_ID.local-agent"><img src="https://img.shields.io/visual-studio-marketplace/v/YOUR_PUBLISHER_ID.local-agent.svg" alt="VS Code Marketplace"/></a>
-  <a href="https://github.com/YOUR_ORG/local-agent/actions"><img src="https://github.com/YOUR_ORG/local-agent/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://github.com/YOUR_ORG/local-agent/actions"><img src="https://github.com/jmullings/local-agent/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <a href="https://github.com/YOUR_ORG/local-agent/releases"><img src="https://img.shields.io/github/v/release/YOUR_ORG/local-agent" alt="Release"/></a>
   <a href="#roadmap--partner-access-nda"><img src="https://img.shields.io/badge/status-active--development-orange.svg" alt="Status"/></a>
 </p>

@@ -83,12 +83,12 @@ Most AI coding agents today are cloud-hosted: your code and the agent's actions 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    VS Code IDE                       │
+┌───────────────────────────────────────────────────────┐
+│                    VS Code IDE                        │
 │                                                       │
-│  ┌──────────────┐      ┌─────────────────────────┐  │
-│  │   Activity   │      │   Extension Host         │  │
-│  │   Bar Icon   │─────▶│   (Node.js / TypeScript) │  │
+│  ┌──────────────┐      ┌───────────────────────────┐  │
+│  │   Activity   │      │   Extension Host          │  │
+│  │   Bar Icon   │─────▶│   (Node.js / TypeScript)  │  │
 │  └──────────────┘      │                           │  │
 │                        │  extension.ts             │  │
 │  ┌──────────────┐      │  DockerManager.ts         │  │
@@ -97,17 +97,17 @@ Most AI coding agents today are cloud-hosted: your code and the agent's actions 
 │  │  main.js     │                 │                   │
 │  │  styles.css  │                 │ dockerode         │
 │  └──────────────┘                 ▼                   │
-└────────────────────────────────────┼──────────────────┘
-                                     │
-                         ┌───────────▼───────────┐
-                         │   Docker Engine API    │
-                         │  /var/run/docker.sock  │
-                         └───────────┬────────────┘
-                                     │
-                         ┌───────────▼───────────┐
-                         │   Docker Containers    │
-                         │ (Ollama, mirrored app) │
-                         └────────────────────────┘
+└───────────────────────────┼───────────────────────────┘
+                            │
+                ┌───────────▼────────────┐
+                │   Docker Engine API    │
+                │  /var/run/docker.sock  │
+                └───────────┬────────────┘
+                            │
+                ┌───────────▼────────────┐
+                │   Docker Containers    │
+                │ (Ollama, mirrored app) │
+                └────────────────────────┘
 ```
 
 ## Security & Privacy by Design
